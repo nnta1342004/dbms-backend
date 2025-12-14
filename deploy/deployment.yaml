@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hareta-backend
+  labels:
+    app: hareta-backend
+    version: v1
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: hareta-backend
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: hareta-backend
+        version: v1
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: hareta-backend
+          image: toan3082004/hareta:latest
+          ports:
+            - containerPort: 3000
+          imagePullPolicy: Always
+          envFrom:
+            - configMapRef:
+                name: hareta-backend
+      imagePullSecrets:
+        - name: docker
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hareta
+spec:
+  selector:
+    app: hareta-backend
+  ports:
+    - name: hareta
+      protocol: TCP
+      port: 3000
+      targetPort: 3000
+
+---

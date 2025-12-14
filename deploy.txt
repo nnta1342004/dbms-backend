@@ -1,0 +1,1 @@
+docker run -d --name redis -e REDIS_PASSWORD=ngogiahan7203 --network my-net bitnami/redis:latest

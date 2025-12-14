@@ -1,0 +1,95 @@
+networks:
+  my-net:
+    name: my-net
+services:
+  mysql:
+    container_name: mysql
+    image: 'bitnami/mysql:latest'
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - ~/mysql:/bitnami/mysql/data
+    environment:
+      - MYSQL_ROOT_PASSWORD=0E123W9h1234g46
+      - MYSQL_DATABASE=hareta
+    networks:
+      - my-net
+
+  redis:
+    container_name: redis
+    image: bitnami/redis:latest
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "100M"
+
+    ports:
+      - 6379:6379
+    environment:
+      - REDIS_PASSWORD=ngogiahan7203
+    networks:
+      - my-net
+
+  hareta-backend:
+    image: toan3082004/hareta:latest
+    ports:
+      - "3000"
+    restart: always
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          cpus: "0.1"
+          memory: "80M"
+    environment:
+      - AWS_BUCKET=hareta-asset
+      - AWS_DOMAIN=asset.haretaworkshop.com
+      - AWS_REGION=ap-southeast-1
+      - JWT_SECRET_KEY=thisisthebestsecretkeyeverproduceintheuniversefuckyou
+      - LETSENCRYPT_HOST=api.haretaworkshop.com
+      - MAIL_ADDRESS=smtp.gmail.com:587
+      - MAIL_HOST="smtp.gmail.com"
+      - MAIL_PASSWORD=uqmcilkcpuoucujz
+      - MAIL_PORT=587
+      - MAIL_USERNAME=noreply.hareta@gmail.com
+      - MYSQL_GORM_DB_URI=root:0E123W9h1234g46@tcp(mysql:3306)/hareta?charset=utf8mb4&parseTime=True&loc=Local
+      - RABBITMQ_URL=amqps://ibofudsk:TzUhYQOcU6PyzvSNyNhT3S0EMIEjSLMb@armadillo.rmq.cloudamqp.com/ibofudsk
+      - REDIS_GO_REDIS_URI=redis://:ngogiahan7203@redis:6379/0
+      - VIRTUAL_HOST=api.haretaworkshop.com
+    depends_on:
+      - redis
+      - mysql
+    networks:
+      - my-net
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /etc/nginx/certs:/etc/nginx/certs:rw
+      - /etc/nginx/vhost.d:/etc/nginx/vhost.d
+      - /usr/share/nginx/html:/usr/share/nginx/html
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    depends_on:
+      - hareta-backend
+    networks:
+      - my-net
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    container_name: letsencrypt
+    depends_on:
+      - nginx-proxy
+    volumes_from:
+      - nginx-proxy
+    volumes:
+      - /etc/nginx/certs:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - my-net
